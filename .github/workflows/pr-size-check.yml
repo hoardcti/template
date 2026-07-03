@@ -1,0 +1,148 @@
+name: PR Size Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+env:
+  MAX_ADDITIONS: 1000
+  MAX_DELETIONS: 1000
+  MAX_TOTAL_CHANGES: 1500
+  LABEL_NAME: "large-pr"
+
+jobs:
+  size-check:
+    name: Check PR size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Evaluate PR size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const maxAdditions = parseInt(process.env.MAX_ADDITIONS, 10);
+            const maxDeletions = parseInt(process.env.MAX_DELETIONS, 10);
+            const maxTotal = parseInt(process.env.MAX_TOTAL_CHANGES, 10);
+            const labelName = process.env.LABEL_NAME;
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            const additions = pr.additions;
+            const deletions = pr.deletions;
+            const total = additions + deletions;
+
+            core.info(`PR size: +${additions} / -${deletions} (total ${total})`);
+
+            const tooBig =
+              additions > maxAdditions ||
+              deletions > maxDeletions ||
+              total > maxTotal;
+
+            const commentMarker = "<!-- pr-size-check -->";
+
+            // Find any previous comment left by this check.
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100,
+            });
+            const existingComment = comments.find(
+              (c) => c.body && c.body.includes(commentMarker)
+            );
+
+            if (!tooBig) {
+              // PR shrank back under the limits: clean up label and stale comment.
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: labelName,
+                });
+                core.info(`Removed "${labelName}" label (PR is within limits).`);
+              } catch (e) {
+                if (e.status !== 404) throw e;
+              }
+              if (existingComment) {
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existingComment.id,
+                });
+              }
+              core.info("PR size is within limits.");
+              return;
+            }
+
+            // Make sure the label exists before applying it.
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: labelName,
+              });
+            } catch (e) {
+              if (e.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: labelName,
+                  color: "d93f0b",
+                  description: "This pull request is very large and hard to review",
+                });
+              } else {
+                throw e;
+              }
+            }
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: [labelName],
+            });
+
+            const body = [
+              commentMarker,
+              "## :warning: This pull request is very large",
+              "",
+              `| Metric | Value | Limit |`,
+              `| --- | --- | --- |`,
+              `| Additions | ${additions} | ${maxAdditions} |`,
+              `| Deletions | ${deletions} | ${maxDeletions} |`,
+              `| Total changes | ${total} | ${maxTotal} |`,
+              "",
+              "Large pull requests are very hard to review properly. " +
+                "Please consider splitting this into smaller, focused pull requests.",
+              "",
+              "_This is only a warning — it does not block the pull request._",
+            ].join("\n");
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
+
+            // Warning annotation only — the job still succeeds.
+            core.warning(
+              `PR exceeds size limits (+${additions}/-${deletions}). Labeled "${labelName}" and commented.`
+            );
