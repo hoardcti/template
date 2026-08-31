@@ -15,7 +15,7 @@ from contextlib import redirect_stdout
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import secret_scan as scanner  # noqa: E402
+import secret_scan as scanner
 
 GH_TOKEN = "ghp_" + "a" * 36
 AWS_KEY = "AKIA" + "IOSFODNN7ABCDEFG"
@@ -142,11 +142,7 @@ class DiffParsing(unittest.TestCase):
         return "diff --git a/src/app.py b/src/app.py\n--- a/src/app.py\n" + body
 
     def test_line_numbers_follow_hunk_headers(self):
-        diff = self._diff(
-            "+++ b/src/app.py\n"
-            "@@ -0,0 +42,1 @@\n"
-            f'+token = "{GH_TOKEN}"\n'
-        )
+        diff = self._diff(f'+++ b/src/app.py\n@@ -0,0 +42,1 @@\n+token = "{GH_TOKEN}"\n')
         findings = scanner.scan_diff(diff)
         self.assertEqual(1, len(findings))
         self.assertEqual(42, findings[0].line_no)
@@ -167,21 +163,15 @@ class DiffParsing(unittest.TestCase):
         self.assertEqual(3, findings[0].line_no)
 
     def test_removed_lines_are_ignored(self):
-        diff = self._diff(
-            "+++ b/src/app.py\n"
-            "@@ -1,1 +0,0 @@\n"
-            f'-token = "{GH_TOKEN}"\n'
-        )
+        diff = self._diff(f'+++ b/src/app.py\n@@ -1,1 +0,0 @@\n-token = "{GH_TOKEN}"\n')
         self.assertEqual([], scanner.scan_diff(diff))
 
     def test_deletion_to_dev_null_is_ignored(self):
-        diff = self._diff("+++ /dev/null\n@@ -1,1 +0,0 @@\n" f'-token = "{GH_TOKEN}"\n')
+        diff = self._diff(f'+++ /dev/null\n@@ -1,1 +0,0 @@\n-token = "{GH_TOKEN}"\n')
         self.assertEqual([], scanner.scan_diff(diff))
 
     def test_clean_diff_produces_no_findings(self):
-        diff = self._diff(
-            "+++ b/src/app.py\n@@ -0,0 +1,1 @@\n+import os\n"
-        )
+        diff = self._diff("+++ b/src/app.py\n@@ -0,0 +1,1 @@\n+import os\n")
         self.assertEqual([], scanner.scan_diff(diff))
 
 

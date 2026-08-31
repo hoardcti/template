@@ -46,6 +46,12 @@
 # Run the baseline checks this repository inherits from the template
 python -m unittest discover -s .github/scripts -p "test_*.py" -v
 
+# Lint and format Python (configured in pyproject.toml)
+ruff check . && ruff format --check .
+
+# Audit GitHub Actions workflows for security problems
+zizmor --config .github/zizmor.yml .github/workflows/
+
 # Scan the working tree for credentials before committing
 python .github/scripts/secret_scan.py --mode tree
 ```

@@ -22,7 +22,20 @@ not just a quality one.
 
 Branch naming: `<type>/<short-description>` — for example `fix/feed-parser-timeout`
 or `feat/stix-2.1-export`. Types: `feat`, `fix`, `docs`, `refactor`, `test`,
-`chore`, `ci`.
+`chore`, `ci`, `perf`, `build`, `revert`.
+
+## Pull request titles
+
+Repositories squash-merge using the **pull request title** as the commit
+message, so the title must follow Conventional Commits — CI checks it. The
+subject should start lower-case and not end with a full stop:
+
+```
+feat(parser): support STIX 2.1 bundles
+fix: handle empty response from upstream feed
+```
+
+Retitling a pull request re-runs the check on its own.
 
 ## Commit messages
 
@@ -63,6 +76,18 @@ Run the checks locally before pushing. For this template repository:
 
 ```bash
 python -m unittest discover -s .github/scripts -p "test_*.py" -v
+```
+
+Lint and format Python (rules are configured in `pyproject.toml`):
+
+```bash
+ruff check . && ruff format --check .
+```
+
+Audit the workflows for security problems:
+
+```bash
+zizmor --config .github/zizmor.yml .github/workflows/
 ```
 
 Scan your working tree for credentials before you commit:
