@@ -13,12 +13,15 @@ we publish, so the integrity of our repositories is part of the product.
 | --- | --- |
 | Secret detection | [`.github/workflows/secret-scan.yml`](.github/workflows/secret-scan.yml), [`.github/scripts/secret_scan.py`](.github/scripts/secret_scan.py) + tests |
 | Review scope control | [`.github/workflows/pr-size-check.yml`](.github/workflows/pr-size-check.yml) |
-| Baseline CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (workflow linting, scanner tests) |
+| Baseline CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) (workflow lint, workflow security audit, dependency review, Python lint/audit, scanner tests) |
+| Workflow security audit | [`.github/zizmor.yml`](.github/zizmor.yml) |
+| Supply-chain posture | [`.github/workflows/scorecard.yml`](.github/workflows/scorecard.yml) |
+| Commit history hygiene | [`.github/workflows/pr-title.yml`](.github/workflows/pr-title.yml) |
 | Review ownership | [`.github/CODEOWNERS`](.github/CODEOWNERS) |
 | Dependency updates | [`.github/dependabot.yml`](.github/dependabot.yml) |
 | Issue and PR intake | [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE), [`.github/PULL_REQUEST_TEMPLATE.md`](.github/PULL_REQUEST_TEMPLATE.md) |
 | Policy | [`SECURITY.md`](SECURITY.md), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`LICENSE`](LICENSE) |
-| Formatting | [`.editorconfig`](.editorconfig), [`.gitignore`](.gitignore) |
+| Formatting and lint config | [`.editorconfig`](.editorconfig), [`.gitignore`](.gitignore), [`pyproject.toml`](pyproject.toml) |
 | Repository settings | [`.github/settings.yml`](.github/settings.yml) (documentation of required settings) |
 
 ## Setup checklist
@@ -44,6 +47,8 @@ At minimum:
 - [ ] `.github/ISSUE_TEMPLATE/config.yml` — URLs point at `hoardcti/template`; repoint them
 - [ ] `.github/dependabot.yml` — uncomment the ecosystems this repository actually uses
 - [ ] `.gitignore` — trim the languages that do not apply, but keep the secrets section
+- [ ] `pyproject.toml` — keep for Python repositories, delete for others; add `[project]` if packaged
+- [ ] `.github/workflows/ci.yml` — agree a dependency licence policy, then uncomment `deny-licenses`
 - [ ] `LICENSE` — confirm GPL-3.0 is right for this repository (see *Licensing* below)
 
 ### 2. Enable repository security settings
@@ -76,7 +81,8 @@ Required on `main`:
 - [ ] Require a pull request before merging, with **1+ approval**
 - [ ] Require review from **Code Owners**
 - [ ] Dismiss stale approvals when new commits are pushed
-- [ ] Require status checks to pass: `Scan pull request diff`, `Lint workflows`, `Secret scanner tests`
+- [ ] Require status checks to pass: `Scan pull request diff`, `Lint workflows`, `Audit workflow security`, `Review dependency changes`, `Check title format`, `Secret scanner tests`, `Check PR size`
+      (do **not** require the language-conditional jobs — see the note in `.github/settings.yml`)
 - [ ] Require branches to be up to date before merging
 - [ ] Require conversation resolution
 - [ ] Block force pushes and deletions
@@ -87,6 +93,7 @@ Required on `main`:
 - [ ] Set **Actions → Workflow permissions** to *Read repository contents* (workflows here request what they need per job)
 - [ ] Restrict Actions to *actions created by GitHub* plus explicitly allowed actions
 - [ ] Add repository topics and a description
+- [ ] Add the OpenSSF Scorecard badge to `README.md` once the first Scorecard run completes
 
 ### 5. Verify
 
@@ -128,6 +135,29 @@ even inside `tests/` and `docs/`. Only shape-based heuristics (generic
 at 4.0 bits/character, below the 4.5 threshold. Hex-encoded credentials are
 covered by the named rules and nothing else — do not assume otherwise when
 adding detections.
+
+**actionlint and zizmor are not redundant.** actionlint checks that workflows
+are *correct* (bad syntax, invalid expressions, shell mistakes). zizmor checks
+that they are *safe* (template injection, credential persistence, dangerous
+triggers, over-broad permissions). Both run. zizmor is what would catch a future
+contributor adding a checkout step to the `pull_request_target` workflow, which
+is the failure mode that design is exposed to.
+
+**zizmor suppressions live in `.github/zizmor.yml`, with reasons.** They are kept
+out of the workflow files so the action SHA comments stay clean for Dependabot.
+Never add one without writing down why the finding is not exploitable — an
+unexplained suppression is how a real issue gets buried.
+
+**Language jobs skip rather than fail.** `ci.yml` detects toolchains and gates
+the Python jobs on the result, so a Go or TypeScript repository is not forced to
+carry them. For the same reason those jobs are deliberately absent from the
+required status checks — a required check that never runs can block merges
+permanently.
+
+**`pip-audit` needs real dependency metadata.** The template's `pyproject.toml`
+carries tool configuration only, with no `[project]` table, so the audit job
+correctly skips here. It activates once a repository declares actual
+dependencies.
 
 ## Licensing
 

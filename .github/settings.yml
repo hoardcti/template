@@ -106,9 +106,18 @@ branches:
       required_status_checks:
         strict: true
         # Job NAMES, not workflow file names. Update if the names change.
+        #
+        # Only unconditional jobs are listed. Do NOT add the language-conditional
+        # jobs ("Lint Python", "Audit Python dependencies") — they are gated on
+        # `needs.detect`, and how GitHub treats a never-running required check
+        # varies enough that it risks blocking pull requests permanently in
+        # repositories that contain no Python.
         contexts:
           - "Scan pull request diff"
           - "Lint workflows"
+          - "Audit workflow security"
+          - "Review dependency changes"
+          - "Check title format"
           - "Secret scanner tests"
           - "Check PR size"
       enforce_admins: false

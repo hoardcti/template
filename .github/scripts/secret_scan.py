@@ -50,37 +50,52 @@ class Rule:
 
 
 RULES: list[Rule] = [
-    Rule("AWS Access Key ID", re.compile(
-        r"\b(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}\b")),
-    Rule("AWS Secret Access Key", re.compile(
-        r"(?i)aws.{0,20}?['\"][0-9a-zA-Z/+]{40}['\"]")),
-    Rule("GitHub Token", re.compile(
-        r"\b(ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9_]{36,255}\b")),
+    Rule(
+        "AWS Access Key ID",
+        re.compile(r"\b(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}\b"),
+    ),
+    Rule("AWS Secret Access Key", re.compile(r"(?i)aws.{0,20}?['\"][0-9a-zA-Z/+]{40}['\"]")),
+    Rule("GitHub Token", re.compile(r"\b(ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9_]{36,255}\b")),
     Rule("GitLab Token", re.compile(r"\bglpat-[A-Za-z0-9\-_]{20,}\b")),
     Rule("Slack Token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b")),
-    Rule("Slack Webhook", re.compile(
-        r"https://hooks\.slack\.com/services/T[A-Za-z0-9_]+/B[A-Za-z0-9_]+/[A-Za-z0-9_]+")),
+    Rule(
+        "Slack Webhook",
+        re.compile(
+            r"https://hooks\.slack\.com/services/T[A-Za-z0-9_]+/B[A-Za-z0-9_]+/[A-Za-z0-9_]+"
+        ),
+    ),
     Rule("Stripe API Key", re.compile(r"\b(sk|rk)_(test|live)_[A-Za-z0-9]{20,}\b")),
     Rule("Google API Key", re.compile(r"\bAIza[0-9A-Za-z\-_]{35}\b")),
-    Rule("SendGrid API Key", re.compile(
-        r"\bSG\.[A-Za-z0-9\-_]{22}\.[A-Za-z0-9\-_]{43}\b")),
+    Rule("SendGrid API Key", re.compile(r"\bSG\.[A-Za-z0-9\-_]{22}\.[A-Za-z0-9\-_]{43}\b")),
     Rule("Twilio API Key", re.compile(r"\bSK[0-9a-fA-F]{32}\b")),
     Rule("npm Token", re.compile(r"\bnpm_[A-Za-z0-9]{36}\b")),
-    Rule("OpenAI API Key", re.compile(
-        r"\bsk-[A-Za-z0-9]{20}T3BlbkFJ[A-Za-z0-9]{20}\b")),
+    Rule("OpenAI API Key", re.compile(r"\bsk-[A-Za-z0-9]{20}T3BlbkFJ[A-Za-z0-9]{20}\b")),
     Rule("Anthropic API Key", re.compile(r"\bsk-ant-[A-Za-z0-9\-_]{20,}\b")),
-    Rule("Private Key Block", re.compile(
-        r"-----BEGIN (RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY( BLOCK)?-----")),
-    Rule("JWT", re.compile(
-        r"\beyJ[A-Za-z0-9\-_]{10,}\.eyJ[A-Za-z0-9\-_]{10,}\.[A-Za-z0-9\-_]{10,}\b")),
-    Rule("Heroku API Key", re.compile(
-        r"(?i)heroku.{0,20}\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b")),
-    Rule("Password in URL", re.compile(
-        r"[a-zA-Z][a-zA-Z0-9+.-]*://[^/\s:@]+:[^/\s:@]+@[^\s]+")),
-    Rule("Generic API Key/Secret assignment", re.compile(
-        r"(?i)[\w.-]*(api[_-]?key|api[_-]?secret|access[_-]?token|auth[_-]?token|client[_-]?secret|"
-        r"secret[_-]?key|private[_-]?key|password|passwd|pwd)\b\s*[:=]\s*['\"][^'\"\s]{8,}['\"]"
-    ), heuristic=True),
+    Rule(
+        "Private Key Block",
+        re.compile(
+            r"-----BEGIN (RSA |EC |DSA |OPENSSH |PGP |ENCRYPTED )?PRIVATE KEY( BLOCK)?-----"
+        ),
+    ),
+    Rule(
+        "JWT",
+        re.compile(r"\beyJ[A-Za-z0-9\-_]{10,}\.eyJ[A-Za-z0-9\-_]{10,}\.[A-Za-z0-9\-_]{10,}\b"),
+    ),
+    Rule(
+        "Heroku API Key",
+        re.compile(
+            r"(?i)heroku.{0,20}\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b"
+        ),
+    ),
+    Rule("Password in URL", re.compile(r"[a-zA-Z][a-zA-Z0-9+.-]*://[^/\s:@]+:[^/\s:@]+@[^\s]+")),
+    Rule(
+        "Generic API Key/Secret assignment",
+        re.compile(
+            r"(?i)[\w.-]*(api[_-]?key|api[_-]?secret|access[_-]?token|auth[_-]?token|client[_-]?secret|"
+            r"secret[_-]?key|private[_-]?key|password|passwd|pwd)\b\s*[:=]\s*['\"][^'\"\s]{8,}['\"]"
+        ),
+        heuristic=True,
+    ),
 ]
 
 # Explicit, auditable per-line suppression.
@@ -237,10 +252,9 @@ def record(path: str, line_no: int, line: str) -> list[Finding]:
 # Sources
 # --------------------------------------------------------------------------
 
+
 def run_git(args: list[str]) -> str:
-    result = subprocess.run(
-        ["git", *args], capture_output=True, text=True, check=True
-    )
+    result = subprocess.run(["git", *args], capture_output=True, text=True, check=True)
     return result.stdout
 
 
@@ -279,7 +293,7 @@ def scan_tree() -> list[Finding]:
         try:
             if os.path.getsize(path) > MAX_FILE_BYTES:
                 continue
-            with open(path, "r", encoding="utf-8") as handle:
+            with open(path, encoding="utf-8") as handle:
                 for line_no, line in enumerate(handle, start=1):
                     findings.extend(record(path, line_no, line.rstrip("\n")))
         except (UnicodeDecodeError, OSError):
@@ -290,6 +304,7 @@ def scan_tree() -> list[Finding]:
 # --------------------------------------------------------------------------
 # Reporting
 # --------------------------------------------------------------------------
+
 
 def report(findings: list[Finding], mode: str) -> None:
     print(f"Found {len(findings)} potential secret(s):\n")
@@ -318,8 +333,10 @@ def report(findings: list[Finding], mode: str) -> None:
     lines += [f"| `{f.path}` | {f.line_no} | {f.kind} |" for f in findings]
     lines += [
         "",
-        "Matched values are redacted here on purpose. Remove the credential and "
-        "**rotate it** -- assume anything committed is compromised.",
+        (
+            "Matched values are redacted here on purpose. Remove the credential "
+            "and **rotate it** -- assume anything committed is compromised."
+        ),
     ]
     try:
         with open(summary_path, "a", encoding="utf-8") as handle:
@@ -339,9 +356,7 @@ def main(argv: list[str] | None = None) -> int:
         if not args.base or not args.head:
             print("::error::BASE_SHA and HEAD_SHA are required for --mode diff")
             return 2
-        diff_text = run_git(
-            ["diff", f"{args.base}...{args.head}", "--unified=0", "--no-color"]
-        )
+        diff_text = run_git(["diff", f"{args.base}...{args.head}", "--unified=0", "--no-color"])
         findings = scan_diff(diff_text)
     else:
         findings = scan_tree()
