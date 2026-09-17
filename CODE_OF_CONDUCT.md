@@ -24,7 +24,7 @@ representing the project in public.
 
 Report abusive, harassing, or otherwise unacceptable behaviour to the project
 maintainers at **<!-- TEMPLATE: conduct contact -->
-conduct@hoardcti.com**.
+support@hoardcti.com**.
 
 All complaints will be reviewed and investigated promptly and fairly. We
 respect the privacy and security of the reporter of any incident.
